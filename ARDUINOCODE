@@ -1,0 +1,23 @@
+#define joyX A0
+char val;
+int deadZone;
+ 
+void setup() {
+  Serial.begin(9600);
+  deadZone = analogRead(joyX);
+}
+ 
+void loop() {
+  int xValue = analogRead(joyX);
+  if(xValue<deadZone-10){
+    val=char(1);
+  }
+  if(xValue>deadZone+10){
+    val=char(2);
+  }
+  if(xValue==deadZone){
+    val=char(0);
+  }
+  Serial.println(val);
+  delay(100);
+}
