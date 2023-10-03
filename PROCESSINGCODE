@@ -1,0 +1,248 @@
+import processing.serial.*;
+Serial myPort;
+char val;
+int dir=0;
+int xpos;
+int ypos=900;
+int ballgo=0;
+int blockCount=0;
+int running=0;
+int lives;
+
+int block[][]={
+  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+};
+
+int ballx;
+int bally;
+float bx=0;
+float by;
+int speed=5;
+
+void reset() {
+
+  for (int y=0; y<6; y++) {
+    for (int x=0; x<10; x++) {
+      block[y][x]=1;
+    }
+  }
+
+  lives=3;
+}
+
+void setup()
+{
+
+  for (int y=0; y<6; y++) {
+    for (int x=0; x<10; x++) {
+      block[y][x]=1;
+    }
+  }
+
+  lives=3;
+  size(1920, 1020);
+  fullScreen();
+
+  rectMode(CENTER);
+  ellipseMode(CENTER);
+  String portName = Serial.list()[1];
+  myPort = new Serial(this, portName, 9600);
+  xpos=width/2;
+
+  ballx=width/2;
+  bally=600;
+
+  while (int(bx)==0) {
+    bx=random(-2, 2);
+  }
+
+  while (int(by)==0) {
+    by=random(-2, 2);
+  }
+}
+
+void screenDraw() {
+
+  noStroke();
+  rect(width/2, 10, width, 10);
+  rect(0, height/2, 10, height-10);
+  rect(width, height/2, 10, height-10);
+
+  stroke(0);
+  strokeWeight(8);
+
+
+
+  if (running==0) {
+    blockCount=0;
+    for (int y=0; y<6; y++) {
+      for (int x=0; x<10; x++) {
+        if (block[y][x]==1) {
+          blockCount++;
+          if (y==0) {
+            fill(255, 0, 0);
+          }
+
+          if (y==1) {
+            fill(255, 125, 0);
+          }
+
+          if (y==2) {
+            fill(255, 255, 0);
+          }
+
+          if (y==3) {
+            fill(0, 255, 0);
+          }
+
+          if (y==4) {
+            fill(0, 255, 125);
+          }
+
+          if (y==5) {
+            fill(0, 125, 255);
+          }
+          rect(105+(x*190), 150+(y*50), 190, 50);
+        }
+      }
+    }
+
+    if (blockCount==0) {
+      running=1;
+    }
+
+
+    if (running==1) {
+
+      textSize(104);
+      fill(255);
+      text("YOU WIN!!!", width/2-250, height/2);
+    }
+  }
+  if (running==0) {
+    textSize(104);
+    fill(255);
+    text("LIVES: "+str(lives), 30, 100);
+
+
+
+    //player draw
+    fill(255, 255, 255);
+    rect(xpos, 900, 190, 50);
+
+    //ball draw
+    ellipse(ballx, bally, 30, 30);
+  }
+}
+
+void draw()
+{
+
+  if (keyPressed) {
+    ballgo=1;
+  }
+
+  if (running==0) {
+    background(0, 0, 0);
+  }
+  screenDraw();
+
+  if ( myPort.available() > 0) {
+    val =char(myPort.read());
+  }
+
+  if (val==char(0)) {
+    dir=0;
+  } else if (val==char(1)) {
+    dir=1;
+  } else if (val==char(2)) {
+    dir=2;
+  }
+
+  if (dir==1) {
+    xpos-=10;
+  }
+  if (dir==2) {
+    xpos+=10;
+  }
+
+
+  if (running==0) {
+    if (xpos+105>width) {
+      xpos=width-105;
+    }
+    if (xpos-105<0) {
+      xpos=0+105;
+    }
+
+    if (ballgo==1) {
+      //checkball location
+      ballx=ballx+int(bx)*speed;
+      bally=bally+int(by)*speed;
+
+      if (bally<25) {
+        by=1;
+      }
+      if (bally>height-25) {
+        //by=-1;
+        lives--;
+        ballx=width/2;
+        bally=600;
+
+        if (lives==0) {
+          reset();
+        }
+      }
+
+      if (ballx<25) {
+        bx=1;
+      }
+      if (ballx>width-25) {
+        bx=-1;
+      }
+    }
+
+
+    //check ball hit block
+
+    for (int y=0; y<6; y++) {
+      for (int x=0; x<10; x++) {
+        if (ballx>10+(x*190) && ballx<190+(x*190)) {
+          if (bally>100+(y*50) && bally<200+(y*50))
+
+
+            if (block[y][x]==1) {
+              block[y][x]=0;
+
+              if (int(by)==-1) {
+                by=1;
+              } else if (int(by)==1) {
+                by=-1;
+              }
+            }
+        }
+      }
+    }
+
+    //check ball hit paddle
+
+    if (ballx>xpos-95 && ballx<xpos+95) {
+      if (bally>ypos-35 && bally<ypos+25) {
+        by=-1;
+      }
+    }
+  }
+}
+
+void mousePressed() {
+  exit();
+}
+
+void keyPressed() {
+  ballgo=1;
+}
